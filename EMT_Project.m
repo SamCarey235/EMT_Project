@@ -5,6 +5,9 @@ clear
 
 % Part A 
 
+% transformer parameters
+a = 50; % turns ratio
+
 num_nodes = 3; % number of nodes
 num_R = 2;
 num_L = 0;
@@ -21,7 +24,7 @@ G_node1 = [1 2];
 G_node2 = [3 4];
 
 % transformer parameters
-T = 0.001;
+Tr = 0.001;
 T_node1 = 1;
 T_node2 = 2;
 
@@ -54,11 +57,11 @@ end
 % add transformers to the matrix
 
 for i = 1:num_T
-    Ytemp = 1 / (1j * 2 * pi * freq * T(i));
+    Ytemp = 1 / (1j * 2 * pi * freq * Tr(i));
     Yorg(T_node1(i), T_node1(i)) = Yorg(T_node1(i), T_node1(i)) + Ytemp;
-    Yorg(T_node1(i), T_node2(i)) = Yorg(T_node1(i), T_node2(i)) - Ytemp;
-    Yorg(T_node2(i), T_node1(i)) = Yorg(T_node2(i), T_node1(i)) - Ytemp;
-    Yorg(T_node2(i), T_node2(i)) = Yorg(T_node2(i), T_node2(i)) + Ytemp;
+    Yorg(T_node1(i), T_node2(i)) = Yorg(T_node1(i), T_node2(i)) - a*Ytemp;
+    Yorg(T_node2(i), T_node1(i)) = Yorg(T_node2(i), T_node1(i)) - a*Ytemp;
+    Yorg(T_node2(i), T_node2(i)) = Yorg(T_node2(i), T_node2(i)) + (a^2)*Ytemp;
 end
 
 % add the voltage sources
@@ -106,10 +109,6 @@ V2 = real(V2);
 
 %% Part B 
 
-% transformer leakage current and turns ratio
-Llk = 0.01;
-a = 50;
-
 % initialisation
 Ts = 1e-5; % timestep
 T = 0:Ts:0.1; % duration
@@ -143,17 +142,16 @@ end
 % add transformers to the matrix
 
 for i = 1:num_T
-    Ytemp = Ts*0.5/T(i);
+    Ytemp = Ts*0.5/Tr(i);
     Yorg(T_node1(i), T_node1(i)) = Yorg(T_node1(i), T_node1(i)) + Ytemp;
-    Yorg(T_node1(i), T_node2(i)) = Yorg(T_node1(i), T_node2(i)) - Ytemp;
-    Yorg(T_node2(i), T_node1(i)) = Yorg(T_node2(i), T_node1(i)) - Ytemp;
-    Yorg(T_node2(i), T_node2(i)) = Yorg(T_node2(i), T_node2(i)) + Ytemp;
+    Yorg(T_node1(i), T_node2(i)) = Yorg(T_node1(i), T_node2(i)) - a*Ytemp;
+    Yorg(T_node2(i), T_node1(i)) = Yorg(T_node2(i), T_node1(i)) - a*Ytemp;
+    Yorg(T_node2(i), T_node2(i)) = Yorg(T_node2(i), T_node2(i)) + (a^2)*Ytemp;
 end
 
 % start the loop
 
-for k = 2:tickmax 
-%k = 2;
+for k = 2:tickmax
     % update voltage source
     Ve = zeros(num_Vs + 1, 1);
     Ve(1) = V_mag * cos(2 * pi * freq * k * Ts + V_phase);
@@ -162,7 +160,7 @@ for k = 2:tickmax
     I = zeros(num_nodes + 1, 1);
     
     % update equivalent current source related to the transformer
-    Ytemp = Ts * (0.5 / T(i));
+    Ytemp = Ts * (0.5 / Tr(i));
     Itemp = Ytemp *(state_vars(k-1, 1) - a*(state_vars(k-1, 3)) + state_vars(k-1, 2));
     I(1) = I(1) - Itemp;
     I(2) = I(2) + a*Itemp;
@@ -192,8 +190,7 @@ for k = 2:tickmax
     
     % transformers
     for i = 1:num_T
-        ItempHV = (0.5 * Ts/T(i)) * state_vars(k-1, 1) + state_vars(k-1, 2);
-        ItempLV = (0.5 * Ts/T(i)) * state_vars(k-1, 3) + state_vars(k-1, 4);
+        ItempHV = (0.5 * Ts/Tr(i)) * state_vars(k-1, 1) + state_vars(k-1, 2);
 
         % VHV
         state_vars(k, 1) = voltages(k, 1);
@@ -201,9 +198,9 @@ for k = 2:tickmax
         state_vars(k, 3) = voltages(k, 2);
 
         % IHV
-        state_vars(k, 2) = (0.5 * Ts/T(i)) * state_vars(k, 1) + ItempHV;
+        state_vars(k, 2) = (0.5 * Ts/Tr(i)) * state_vars(k, 1) + ItempHV;
         % ILV
-        state_vars(k, 4) = (0.5 * Ts/T(i)) * state_vars(k, 3) + ItempLV;
+        state_vars(k, 4) = -a*state_vars(k, 2);
 
     end
 
