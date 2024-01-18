@@ -1,7 +1,9 @@
 %% 
 
-clc
-clear
+close all
+clear all
+
+
 
 % Part A 
 
@@ -10,7 +12,7 @@ a = 50; % turns ratio
 
 num_nodes = 3; % number of nodes
 num_R = 2;
-num_L = 0;
+num_L = 1;
 num_C = 0;
 num_T = 1;
 num_Vs = 1;
@@ -22,6 +24,11 @@ pi = 3.141592653;
 G = [1 1e-6];
 G_node1 = [1 2];
 G_node2 = [3 4];
+
+% resistor parameters
+L = [1];
+L_node1 = [2];
+L_node2 = [4];
 
 % transformer parameters
 Tr = 0.001;
@@ -52,6 +59,15 @@ for i = 1:num_R
     Yorg(G_node1(i), G_node2(i)) = Yorg(G_node1(i), G_node2(i)) - Ytemp;
     Yorg(G_node2(i), G_node1(i)) = Yorg(G_node2(i), G_node1(i)) - Ytemp;
     Yorg(G_node2(i), G_node2(i)) = Yorg(G_node2(i), G_node2(i)) + Ytemp;
+end
+
+% Add inductances to the matrix
+for i = 1:num_L
+    Ytemp = 1 / (j * 2 * pi * freq * L(i));
+    Yorg(L_node1(i), L_node1(i)) = Yorg(L_node1(i), L_node1(i)) + Ytemp;
+    Yorg(L_node1(i), L_node2(i)) = Yorg(L_node1(i), L_node2(i)) - Ytemp;
+    Yorg(L_node2(i), L_node1(i)) = Yorg(L_node2(i), L_node1(i)) - Ytemp;
+    Yorg(L_node2(i), L_node2(i)) = Yorg(L_node2(i), L_node2(i)) + Ytemp;
 end
 
 % add transformers to the matrix
@@ -152,6 +168,15 @@ for i = 1:num_T
     Yorg(T_node2(i), T_node2(i)) = Yorg(T_node2(i), T_node2(i)) + (a^2)*Ytemp;
 end
 
+% Add inductances to the matrix
+for i = 1:num_L
+    Ytemp = Ts * 0.5 / L(i);
+    Yorg(L_node1(i), L_node1(i)) = Yorg(L_node1(i), L_node1(i)) + Ytemp;
+    Yorg(L_node1(i), L_node2(i)) = Yorg(L_node1(i), L_node2(i)) - Ytemp;
+    Yorg(L_node2(i), L_node1(i)) = Yorg(L_node2(i), L_node1(i)) - Ytemp;
+    Yorg(L_node2(i), L_node2(i)) = Yorg(L_node2(i), L_node2(i)) + Ytemp;
+end
+
 % start the loop
 
 for k = 2:tickmax
@@ -225,3 +250,14 @@ figure;
 plot(T,state_vars(:,4))
 xlabel('Time in s') 
 ylabel('Ic in A') 
+
+function [Y] = add_to_matrix(Y, value_array, node_array1, node_array2, a)
+    temp = 0;
+    for i = 1:length(value_array)
+        temp = value_array(i);
+        Y(node_array1(i), node_array1(i)) = Y(node_array1(i), node_array1(i)) + temp;
+        Y(node_array1(i), node_array2(i)) = Y(node_array1(i), node_array2(i)) - a*temp;
+        Y(node_array2(i), node_array1(i)) = Y(node_array2(i), node_array1(i)) - a*temp;
+        Y(node_array2(i), node_array2(i)) = Y(node_array2(i), node_array2(i)) + (a^2)*temp;
+    end
+end
