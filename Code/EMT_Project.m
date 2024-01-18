@@ -122,8 +122,11 @@ state_vars = zeros(tickmax, num_state_vars);
 voltages = zeros(tickmax, num_nodes + 1);
 
 % fill in the state varibales and voltages
-state_vars(1,:) = [V1 0 V2 0]; % [VLV IHV VLV ILV]
-voltages(1,:) = [V1 V2 35e3 0]; % [V1 V2 230e3 0]
+%state_vars(1,:) = [V1 0 V2 0]; % [VLV IHV VLV ILV]
+%voltages(1,:) = [V1 V2 35e3 0]; % [V1 V2 230e3 0]
+
+state_vars(1,:) = [0 0 0 0];
+voltages(1,:) = [0 0 0 0];
 
 % create the admittance matrix 
 Yorg = zeros(num_nodes + 1, num_nodes +1);
