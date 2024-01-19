@@ -192,6 +192,12 @@ for k = 2:tickmax
     Itemp = Ytemp *(state_vars(k-1, 1) - a*(state_vars(k-1, 3)) + state_vars(k-1, 2));
     I(1) = I(1) - Itemp;
     I(2) = I(2) + a*Itemp;
+
+    % Adding history terms from the inducance to j
+    J_L = Ts * 0.5 / L(1) * state_vars(k-1, 3) + state_vars(k-1, 4);
+    I(L_node1(1)) = I(L_node1(1)) - J_L;
+    I(L_node2(1)) = I(L_node2(1)) + J_L;
+
     %I(4) = I(4) + Itemp - a*Itemp;
 
     % eliminate the excitation nodes
