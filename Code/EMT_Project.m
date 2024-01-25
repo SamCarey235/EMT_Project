@@ -26,7 +26,7 @@ G_node1 = [1 2];
 G_node2 = [3 4];
 
 % resistor parameters
-L = [1];
+L = [3.33e-5];
 L_node1 = [2];
 L_node2 = [4];
 
@@ -188,15 +188,15 @@ for k = 2:tickmax
     I = zeros(num_nodes + 1, 1);
     
     % update equivalent current source related to the transformer
-    Ytemp = Ts * (0.5 / Tr(i));
+    Ytemp = Ts * (0.5 / Tr);
     Itemp = Ytemp *(state_vars(k-1, 1) - a*(state_vars(k-1, 3)) + state_vars(k-1, 2));
     I(1) = I(1) - Itemp;
     I(2) = I(2) + a*Itemp;
 
     % Adding history terms from the inducance to j
-    J_L = Ts * 0.5 / L(1) * state_vars(k-1, 3) + state_vars(k-1, 4);
-    I(L_node1(1)) = I(L_node1(1)) - J_L;
-    I(L_node2(1)) = I(L_node2(1)) + J_L;
+    %J_L = Ts * 0.5 / L(1) * state_vars(k-1, 3) + state_vars(k-1, 4);
+    %I(L_node1(1)) = I(L_node1(1)) - J_L;
+    %I(L_node2(1)) = I(L_node2(1)) + J_L;
 
     %I(4) = I(4) + Itemp - a*Itemp;
 
@@ -238,24 +238,37 @@ for k = 2:tickmax
 
     end
 
+    % Energization Inductance integration
+    %i = 0.5 * Ts / L(i) * (state_vars(k, 3) + state_vars(k-1, 3)) + state_vars(k-1, 4);
+    
+    % add it to the current on the low voltage side
+    %state_vars(k, 4) = state_vars(k, 4) - i;
 end
 
 figure;
-plot(T,state_vars(:,1))
-xlabel('Time in s') 
-ylabel('Vl in V') 
+plot(T, state_vars(:,1));
+title('Voltage High Voltage Side')
+xlabel('Time in s')
+ylabel('V_{HV} in V')
+grid on
 figure;
-plot(T,state_vars(:,2))
-xlabel('Time in s') 
-ylabel('Il in A') 
+plot(T, state_vars(:,2))
+title('Current High Voltage Side')
+xlabel('Time in s')
+ylabel('I_{HV} in A')
+grid on
 figure;
-plot(T,state_vars(:,3))
-xlabel('Time in s') 
-ylabel('Vc in V') 
+plot(T, state_vars(:,3))
+title('Voltage Low Voltage Side')
+xlabel('Time in s')
+ylabel('V_{LV} in V')
+grid on
 figure;
-plot(T,state_vars(:,4))
-xlabel('Time in s') 
-ylabel('Ic in A') 
+plot(T, state_vars(:,4))
+title('Current Low Voltage Side')
+xlabel('Time in s')
+ylabel('I_{LV} in A')
+grid on
 
 function [Y] = add_to_matrix(Y, value_array, node_array1, node_array2, a)
     temp = 0;
