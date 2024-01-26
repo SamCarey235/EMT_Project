@@ -143,6 +143,8 @@ voltages = zeros(tickmax, num_nodes + 1);
 
 state_vars(1,:) = [0 0 0 0];
 voltages(1,:) = [0 0 0 0];
+excitation_ind_arr = zeros(tickmax);
+excitation_ind_arr(1) = 0.25;
 
 % create the admittance matrix 
 Yorg = zeros(num_nodes + 1, num_nodes +1);
@@ -189,13 +191,14 @@ for k = 2:tickmax
     
     % update equivalent current source related to the transformer
     Ytemp = Ts * (0.5 / Tr);
-    Itemp = Ytemp *(state_vars(k-1, 1) - a*(state_vars(k-1, 3)) + state_vars(k-1, 2));
+    Itemp = Ytemp * (state_vars(k-1, 1) - a*(state_vars(k-1, 3)) + state_vars(k-1, 2));
     I(1) = I(1) - Itemp;
     I(2) = I(2) + a*Itemp;
 
     % Adding history terms from the inducance to j
-    %J_L = Ts * 0.5 / L(1) * state_vars(k-1, 3) + state_vars(k-1, 4);
-    %I(L_node1(1)) = I(L_node1(1)) - J_L;
+    J_L = Ts * 0.5 / excitation_ind_arr(k-1) * state_vars(k-1, 3) + state_vars(k-1, 4);
+    %disp(J_L);
+    I(2) = I(2) + J_L;
     %I(L_node2(1)) = I(L_node2(1)) + J_L;
 
     %I(4) = I(4) + Itemp - a*Itemp;
@@ -237,13 +240,19 @@ for k = 2:tickmax
         state_vars(k, 4) = -a*state_vars(k, 2);
 
     end
-
+    excitation_ind_arr(k) = excitationInductanceLinear(1000, 0.25, 3, state_vars(k, 4), state_vars(k - 1, 4));
+    if k == 5
+        disp(excitation_ind_arr(k));
+    end
+    %disp(I);
     % Energization Inductance integration
-    %i = 0.5 * Ts / L(i) * (state_vars(k, 3) + state_vars(k-1, 3)) + state_vars(k-1, 4);
+    i = 0.5 * Ts / excitation_ind_arr(k) * (state_vars(k, 4) + state_vars(k-1, 4)) + state_vars(k-1, 4);
     
     % add it to the current on the low voltage side
-    %state_vars(k, 4) = state_vars(k, 4) - i;
+    state_vars(k, 4) = state_vars(k, 4) - i;
 end
+
+%disp(state_vars);
 
 figure;
 plot(T, state_vars(:,1));
@@ -269,6 +278,24 @@ title('Current Low Voltage Side')
 xlabel('Time in s')
 ylabel('I_{LV} in A')
 grid on
+figure;
+plot(T, excitation_ind_arr)
+title('L_E')
+xlabel('Time in s')
+ylabel('L in H')
+grid on
+
+function [L] = excitationInductanceLinear(N, A, l, i_k, i_k_1)
+    delta_h = N / l * (i_k - i_k_1);
+    H = delta_h + N / l * i_k_1;
+    mu = 2.5e-1;
+    %B = mu * H;
+    L = N*N / l * mu * A;
+    x = [-1 0 1e-15 2];
+    y = [-L-5000 -L L L+5000];
+    B = interp1(x,y,H, 'linear', 'extrap');
+    L = N * B * A / i_k;
+end
 
 function [Y] = add_to_matrix(Y, value_array, node_array1, node_array2, a)
     temp = 0;
